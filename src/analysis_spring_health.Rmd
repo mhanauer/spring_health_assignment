@@ -11,15 +11,16 @@ knitr::opts_chunk$set(echo = TRUE)
 Step: Library packages and load data
 ```{r}
 library(pacman)
-p_load(dplyr, tidyverse, janitor, ggplot2)
+p_load(dplyr, tidyverse, janitor, ggplot2, tsibble, formattable)
 data_spring_health <- read_csv("~/spring_health_assignment/spring_health_take_home_df.csv")
 ```
 Step: Clean data sets
-I am just getting all names to lower case snake case 
+I am just getting all names to lower case snake case and make change out NAs for phq-9 total score and make numeric
 ```{r}
 data_spring_health_clean =  data_spring_health %>%
-  clean_names() 
-
+  clean_names() %>%
+  mutate(phq9_score = na_if(phq9_score, "N/A"), 
+         phq9_score = as.numeric(phq9_score)) 
 
 ```
 
@@ -47,11 +48,42 @@ avg_number_of_interactions
 ```
 Step: Q3 What is the distribution of baseline PHQ9 total scores for members on the platform.
     Q3a Please include a visualization
-    Q3b Please calculate summary statistics
 ```{r}
 ggplot(data_spring_health_clean, aes(x=as.numeric(phq9_score))) + 
   geom_histogram(binwidth=1) + 
   labs(y= "Count of PHQ-9 total scores", x = "PHQ-9 total scores")
+```
+Step: Q3b Please calculate summary statistics
+```{r}
+summary(data_spring_health_clean$phq9_score)
+```
+Step: Assuming average change means change from first to latest session.
+Getting the change data set prepared.
+```{r}
+
+data_spring_health_clean_change = data_spring_health_clean %>%
+  filter(questionnaire_kind == "PHQ9") %>%
+  group_by(member_id_hashed) %>%
+  mutate(id = cur_group_id()) %>%
+  dplyr::select(member_id_hashed, phq9_score, id) %>%
+  arrange(desc(id)) %>%
+  ungroup() %>%
+  group_by(id) %>%
+  # Only keep values with at least two responses
+  filter( n() > 1 ) %>%
+  mutate(phq9_score_change = tsibble::difference(phq9_score)/(ifelse(lag(phq9_score) == 0, 1,lag(phq9_score)))) %>%
+  ungroup() %>%
+  summarise(avg_phq9_score_change = mean(phq9_score_change, na.rm = TRUE)) %>%
+  mutate(avg_phq9_score_change = formattable::percent(avg_phq9_score_change, digits = 2))
+
+
+data_spring_health_clean_change
+```
+Step: Q4 What is the average change in total PHQ9 score for members using the platform
+```{r}
+data_spring_health_clean_change 
+
+
 
 ```
 
