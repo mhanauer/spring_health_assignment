@@ -8,23 +8,50 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+Step: Library packages and load data
+```{r}
+library(pacman)
+p_load(dplyr, tidyverse, janitor, ggplot2)
+data_spring_health <- read_csv("~/spring_health_assignment/spring_health_take_home_df.csv")
+```
+Step: Clean data sets
+I am just getting all names to lower case snake case 
+```{r}
+data_spring_health_clean =  data_spring_health %>%
+  clean_names() 
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+Step: Q1 How many individuals used our platform
+Assuming the number of participants is the unique number of member_id_hashed.  It seems like each person takes both the SDS and PHQ-9
+```{r}
+number_of_participants = data_spring_health_clean %>%
+  distinct(member_id_hashed) %>%
+  count()
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+number_of_participants
+```
+Step: Q2 What is the average number of times that a member interacts with the platform.
+Assuming member_id_hashed is the member id and is unique for each member.  So grouping them by member ID and then taking the mean.
+```{r}
+avg_number_of_interactions = data_spring_health_clean %>%
+  group_by(member_id_hashed) %>%
+  count() %>%
+  ungroup() %>%
+  summarise(mean_interactions = mean(n)) %>%
+  mutate(mean_interactions = round(mean_interactions, 2))
+
+avg_number_of_interactions
+```
+Step: Q3 What is the distribution of baseline PHQ9 total scores for members on the platform.
+    Q3a Please include a visualization
+    Q3b Please calculate summary statistics
+```{r}
+ggplot(data_spring_health_clean, aes(x=as.numeric(phq9_score))) + 
+  geom_histogram(binwidth=1) + 
+  labs(y= "Count of PHQ-9 total scores", x = "PHQ-9 total scores")
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
