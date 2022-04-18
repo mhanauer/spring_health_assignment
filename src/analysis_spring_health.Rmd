@@ -64,26 +64,32 @@ summary(data_spring_health_clean$phq9_score)
 ```
 Step: Q4 What is the average change in total PHQ9 score for members using the platform
 ```{r}
-average_change_phq9 = data_spring_health_clean %>%
-  filter(questionnaire_kind == "PHQ9") %>%
-  dplyr::select(member_id_hashed, phq9_score, id, event) %>%
-  arrange(desc(id), (event)) %>%
-  ungroup() %>%
-  group_by(id) %>%
-  # Only keep values with at least two responses
-  filter( n() > 1 ) %>%
-  mutate(phq9_score_change = tsibble::difference(phq9_score)/(ifelse(lag(phq9_score) == 0, 1,lag(phq9_score)))) %>%
-  ungroup() %>%
-  summarise(avg_phq9_score_change = mean(phq9_score_change, na.rm = TRUE)) %>%
-  mutate(avg_phq9_score_change = formattable::percent(avg_phq9_score_change, digits = 2))
+average_change_phq9_fun = function(data = "data_spring_health_clean")  {
+  data_out <- data_spring_health_clean %>%
+   filter(questionnaire_kind == "PHQ9") %>%
+   dplyr::select(member_id_hashed, phq9_score, id, event) %>%
+   arrange(desc(id), (event)) %>%
+   ungroup() %>%
+   group_by(id) %>%
+   # Only keep values with at least two responses
+   filter(n() > 1) %>%
+   mutate(phq9_score_change = tsibble::difference(phq9_score) / (ifelse(lag(phq9_score) == 0, 1, lag(phq9_score)))) %>%
+   ungroup() %>%
+   summarise(avg_phq9_score_change = mean(phq9_score_change, na.rm = TRUE)) %>%
+   mutate(avg_phq9_score_change = formattable::percent(avg_phq9_score_change, digits = 2))
+  return(data_out)
+}
+  
 
+average_change_phq9 = average_change_phq9_fun()
 average_change_phq9
 ```
 Step: Q5 What is the average change in total PHQ9 score for depressed individuals using the platform
 
-Assuming depression at baselines means not none or N/A at baseline and removing those indiviudals
+Assuming depression at baselines means not none or N/A at baseline and removing those individuals.
 ```{r}
-average_change_phq9_depressed = data_spring_health_clean %>%
+average_change_phq9_depressed_fun = function(data = "data_spring_health_clean") {
+  out_data =  data_spring_health_clean %>%
   filter(questionnaire_kind == "PHQ9") %>%
   mutate(filter_non_dep_baseline = if_else(event == 1 & (phq9_acuity == "N/A" | phq9_acuity == "none"), "drop", "keep")) %>%
   filter(filter_non_dep_baseline == "keep") %>%
@@ -97,29 +103,38 @@ average_change_phq9_depressed = data_spring_health_clean %>%
   ungroup() %>%
   summarise(avg_phq9_score_change = mean(phq9_score_change, na.rm = TRUE)) %>%
   mutate(avg_phq9_score_change = formattable::percent(avg_phq9_score_change, digits = 2))
+  return(out_data)
+}
+   
 
 
+average_change_phq9_depressed = average_change_phq9_depressed_fun()
 average_change_phq9_depressed
 ```
-Step: Q6 What is the average change in total workplace productivity (SDS_days_unproductive ) for members interacting with the platform
+Step: Q6 What is the average change in total workplace productivity (SDS_days_unproductive) for members interacting with the platform
 ```{r}
-avg_work_productivity = data_spring_health_clean %>%
-  dplyr::select(member_id_hashed, id, event, sds_days_unproductive) %>%
+avg_work_productivity_fun = function(data = "data_spring_health_clean") {
+  data_out = data_spring_health_clean %>%
+      dplyr::select(member_id_hashed, id, event, sds_days_unproductive) %>%
   arrange(desc(id), (event)) %>%
-  ungroup() %>%
-  group_by(id) %>%
-  # Only keep values with at least two responses
-  filter( n() > 1 ) %>%
-  mutate(sds_days_score_change = tsibble::difference(sds_days_unproductive)/(ifelse(lag(sds_days_unproductive) == 0, 1,lag(sds_days_unproductive)))) %>%
-  ungroup() %>%
-  summarise(sds_days_score_change = mean(sds_days_score_change, na.rm = TRUE)) %>%
-  mutate(sds_days_score_change = formattable::percent(sds_days_score_change, digits = 2))
+    ungroup() %>%
+    group_by(id) %>%
+    # Only keep values with at least two responses
+    filter(n() > 1) %>%
+    mutate(sds_days_score_change = tsibble::difference(sds_days_unproductive) / (ifelse(lag(sds_days_unproductive) == 0, 1, lag(sds_days_unproductive)))) %>%
+    ungroup() %>%
+    summarise(sds_days_score_change = mean(sds_days_score_change, na.rm = TRUE)) %>%
+    mutate(sds_days_score_change = formattable::percent(sds_days_score_change, digits = 2))
+  return(data_out)
+}
 
+
+avg_work_productivity = avg_work_productivity_fun()
 avg_work_productivity
 ```
 Step: Q7a Please explore and explain the relationship between symptomatic improvement and functional improvement amongst members who interacted with the Spring platform.
 
-Recreate data sets to allow for non-parameteric tests
+Recreate data sets to allow for non-parametric tests
 ```{r}
 phq_9_improvement = data_spring_health_clean %>%
   filter(questionnaire_kind == "PHQ9") %>%
@@ -156,5 +171,5 @@ sds_results
 ```
 Q7b Do you think that members benefit from interacting with the Spring platform? Why?
 
-According to my analysis, both PHQ-9 and unproductive SDS days average percentage change are statistically signifantly greater than zero and both percentage changes are positive indicating there is evidence the Spring Health platform is not effective at reducing thes two outcomes. 
+According to my analysis, both PHQ-9 and unproductive SDS days average percentage change are statistically significantly greater than zero and both percentage changes are positive indicating there is evidence the Spring Health platform is not effective at reducing these two outcomes. 
 
