@@ -51,6 +51,8 @@ avg_number_of_interactions = data_spring_health_clean %>%
 
 avg_number_of_interactions
 ```
+
+
 Step: Q3 What is the distribution of baseline PHQ9 total scores for members on the platform.
     Q3a Please include a visualization
 ```{r}
