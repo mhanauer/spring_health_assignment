@@ -9,6 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 Step: Library packages and load data
+
+Github for project: https://github.com/mhanauer/spring_health_assignment
 ```{r}
 library(pacman)
 p_load(dplyr, tidyverse, janitor, ggplot2, tsibble, formattable)
